@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Planeamientos — Barrigón</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1923">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planeamientos">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<style>
+:root{
+  --bg:#0f1923;--bg2:#162030;--bg3:#1e2d40;--card:#1a2a3a;
+  --border:rgba(255,255,255,0.08);--text:#f0f4f8;--muted:#7a9ab8;
+  --blue:#2e7de9;--blue-l:#5b9ef7;--teal:#1a9e7a;--teal-l:#2ecfa0;
+  --amber:#d4860a;--amber-l:#f5a623;--purple:#7c5cbf;--purple-l:#9b7de0;
+  --coral:#d94f3d;--r:12px;--r-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;}
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:268px;min-width:268px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease;}
+.sb-header{padding:14px 15px;border-bottom:1px solid var(--border);}
+.sb-logo{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.sb-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sb-logo-icon i{font-size:16px;color:#fff;}
+.sb-logo-text span{font-family:'Nunito',sans-serif;font-size:13px;font-weight:900;display:block;}
+.sb-logo-text small{font-size:10px;color:var(--muted);}
+.btn-upload{width:100%;padding:9px;background:linear-gradient(135deg,var(--blue),#1a5bc4);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .2s;}
+.btn-upload:hover{opacity:.9;}
+.sb-search{padding:8px 12px;border-bottom:1px solid var(--border);}
+.sb-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 11px;color:var(--text);font-size:13px;font-family:'Nunito Sans',sans-serif;outline:none;}
+.sb-search input::placeholder{color:var(--muted);}
+.sb-search input:focus{border-color:var(--blue);}
+.sb-tree{flex:1;overflow-y:auto;padding:6px 8px 20px;}
+.sb-tree::-webkit-scrollbar{width:3px;}
+.sb-tree::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* tree header */
+.tree-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 6px 4px;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);}
+.tree-hdr button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;transition:color .15s;}
+.tree-hdr button:hover{color:var(--text);}
+
+/* L1 folder */
+.fl1{margin-bottom:2px;}
+.fl1-h{display:flex;align-items:center;gap:5px;padding:7px 6px;border-radius:var(--r-sm);cursor:pointer;user-select:none;transition:background .15s;}
+.fl1-h:hover{background:var(--bg3);}
+.fl1-h .cv{font-size:11px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.fl1-h .fi{font-size:16px;color:var(--amber-l);flex-shrink:0;}
+.fl1-h .fn{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;flex:1;color:var(--text);}
+.fl1-h .fc{font-size:10px;color:var(--muted);background:var(--bg3);padding:1px 6px;border-radius:10px;flex-shrink:0;}
+.fl1-h .addsub{opacity:0;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;transition:opacity .15s,color .15s;flex-shrink:0;}
+.fl1-h:hover .addsub{opacity:1;}
+.fl1-h .addsub:hover{color:var(--text);}
+.fl1.open .cv{transform:rotate(90deg);}
+.fl1-b{display:none;padding-left:10px;}
+.fl1.open .fl1-b{display:block;}
+
+/* L2 folder */
+.fl2{margin-bottom:1px;}
+.fl2-h{display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:var(--r-sm);cursor:pointer;user-select:none;transition:background .15s;}
+.fl2-h:hover{background:var(--bg3);}
+.fl2-h .cv2{font-size:10px;color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.fl2-h .fi2{font-size:14px;flex-shrink:0;}
+.fl2-h .fn2{font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;flex:1;color:var(--muted);}
+.fl2-h .fc2{font-size:10px;color:var(--muted);background:var(--bg3);padding:1px 5px;border-radius:8px;flex-shrink:0;}
+.fl2-h .adddoc{opacity:0;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:4px;transition:opacity .15s,color .15s;flex-shrink:0;}
+.fl2-h:hover .adddoc{opacity:1;}
+.fl2-h .adddoc:hover{color:var(--blue-l);}
+.fl2.open .cv2{transform:rotate(90deg);}
+.fl2-b{display:none;padding-left:16px;}
+.fl2.open .fl2-b{display:block;}
+
+/* doc item */
+.doc-item{display:flex;align-items:center;gap:7px;padding:5px 6px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;margin-bottom:1px;}
+.doc-item:hover{background:var(--bg3);}
+.doc-item.active{background:rgba(46,125,233,0.15);border:1px solid rgba(46,125,233,0.25);}
+.doc-item i{font-size:13px;flex-shrink:0;}
+.doc-item .dn{font-size:12px;flex:1;line-height:1.3;color:var(--text);}
+.db{font-size:9px;padding:2px 5px;border-radius:6px;font-family:'Nunito',sans-serif;font-weight:700;flex-shrink:0;}
+.db-pdf{background:rgba(217,79,61,0.2);color:#ff7b6b;}
+.db-new{background:rgba(26,158,122,0.2);color:var(--teal-l);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
+.toolbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.btn-menu{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;color:var(--muted);cursor:pointer;display:none;align-items:center;font-size:18px;transition:color .15s;flex-shrink:0;}
+.btn-menu:hover{color:var(--text);}
+.toolbar-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;cursor:pointer;}
+.tb-sep{width:1px;height:22px;background:var(--border);margin:0 2px;flex-shrink:0;}
+.tb-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;color:var(--text);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.tb-btn i{font-size:14px;}
+.tb-btn:hover{border-color:var(--blue-l);color:var(--blue-l);}
+.tb-btn.active{background:rgba(46,125,233,0.15);border-color:var(--blue);color:var(--blue-l);}
+.tb-btn.danger:hover{border-color:#ff7b6b;color:#ff7b6b;}
+.tb-btn.teal:hover{border-color:var(--teal-l);color:var(--teal-l);}
+.tb-btn.amber:hover{border-color:var(--amber-l);color:var(--amber-l);}
+.tb-btn.purple:hover{border-color:var(--purple-l);color:var(--purple-l);}
+.tb-label{font-size:12px;}
+
+/* viewer */
+.viewer-wrap{flex:1;display:flex;overflow:hidden;}
+.doc-area{flex:1;overflow-y:auto;padding:26px 20px;background:var(--bg);}
+.doc-area::-webkit-scrollbar{width:5px;}
+.doc-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* document paper */
+.doc-paper{background:#fff;color:#1a1a2e;border-radius:var(--r);padding:48px 56px;max-width:720px;margin:0 auto;min-height:580px;box-shadow:0 4px 40px rgba(0,0,0,.4);}
+.doc-paper h1{font-family:'Nunito',sans-serif;font-size:19px;font-weight:900;color:#1a1a2e;margin-bottom:5px;}
+.doc-meta{font-size:11px;color:#6b7280;margin-bottom:20px;display:flex;gap:14px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;padding-bottom:11px;}
+.doc-section{margin-bottom:16px;}
+.doc-section h2{font-family:'Nunito',sans-serif;font-size:11px;font-weight:900;color:#1a1a2e;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;padding-bottom:3px;border-bottom:2px solid #e5e7eb;}
+.doc-section h3{font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:#374151;margin-bottom:4px;margin-top:9px;}
+.doc-section p,.doc-section li{font-size:13px;color:#374151;line-height:1.7;margin-bottom:5px;}
+.doc-section ul{padding-left:16px;}
+.doc-table{width:100%;border-collapse:collapse;margin:7px 0;font-size:12px;}
+.doc-table th{background:#f3f4f6;color:#1a1a2e;font-family:'Nunito',sans-serif;font-weight:800;padding:6px 8px;text-align:left;border:1px solid #e5e7eb;}
+.doc-table td{padding:5px 8px;border:1px solid #e5e7eb;color:#374151;vertical-align:top;}
+.doc-table tr:nth-child(even) td{background:#fafafa;}
+
+/* DASHBOARD */
+.dashboard{padding:24px 20px;max-width:680px;margin:0 auto;width:100%;}
+.dash-greeting h2{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;margin-bottom:3px;}
+.dash-greeting p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:center;}
+.stat-num{font-family:'Nunito',sans-serif;font-size:24px;font-weight:900;line-height:1;}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
+.sc-blue .stat-num{color:var(--blue-l);}
+.sc-amber .stat-num{color:var(--amber-l);}
+.sc-teal .stat-num{color:var(--teal-l);}
+.dash-sec{font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+.dash-folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:9px;margin-bottom:20px;}
+.df-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;cursor:pointer;transition:border-color .15s;}
+.df-card:hover{border-color:var(--amber-l);}
+.df-card i{font-size:20px;color:var(--amber-l);display:block;margin-bottom:7px;}
+.df-name{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;margin-bottom:2px;}
+.df-meta{font-size:11px;color:var(--muted);}
+.dash-recent{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;}
+.dr-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s;}
+.dr-item:hover{border-color:var(--blue-l);}
+.dr-title{font-size:13px;font-weight:600;flex:1;}
+.dr-meta{font-size:11px;color:var(--muted);flex-shrink:0;}
+.dash-btn-up{width:100%;padding:11px;background:linear-gradient(135deg,var(--blue),#1a5bc4);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;transition:opacity .2s;}
+.dash-btn-up:hover{opacity:.9;}
+.dash-btn-cache{background:rgba(212,134,10,0.12);border:1px solid rgba(212,134,10,0.35);border-radius:var(--r-sm);padding:9px 14px;color:var(--amber-l);font-size:12px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;transition:opacity .2s;}
+.dash-btn-cache:hover{opacity:.8;}
+
+/* NOTES PANEL */
+.notes-panel{width:274px;min-width:274px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width .2s,min-width .2s;}
+.notes-panel.collapsed{width:0;min-width:0;}
+.np-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.np-hdr h3{font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;color:var(--amber-l);}
+.btn-close-np{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;transition:color .15s;}
+.btn-close-np:hover{color:var(--text);}
+.np-form{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.np-form label{font-size:10px;font-weight:700;font-family:'Nunito',sans-serif;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:4px;}
+.np-form select,.np-form textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:'Nunito Sans',sans-serif;font-size:12px;outline:none;padding:7px 9px;margin-bottom:9px;}
+.np-form select:focus,.np-form textarea:focus{border-color:var(--amber);}
+.np-form textarea{resize:vertical;min-height:74px;line-height:1.5;}
+.np-form select option{background:var(--bg3);}
+.btn-add-note{width:100%;padding:9px;background:linear-gradient(135deg,var(--amber),#a86200);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;}
+.np-list{flex:1;overflow-y:auto;padding:8px 10px;}
+.np-list::-webkit-scrollbar{width:3px;}
+.np-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;margin-bottom:7px;}
+.note-card.correction{border-left:3px solid #ff7b6b;}
+.note-card.observation{border-left:3px solid var(--amber-l);}
+.note-card.highlight{border-left:3px solid var(--teal-l);}
+.note-card.supervisor{border-left:3px solid var(--purple-l);}
+.note-top{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
+.nbadge{font-size:9px;padding:2px 5px;border-radius:6px;font-family:'Nunito',sans-serif;font-weight:700;}
+.nb-correction{background:rgba(217,79,61,0.2);color:#ff7b6b;}
+.nb-observation{background:rgba(212,134,10,0.2);color:var(--amber-l);}
+.nb-highlight{background:rgba(26,158,122,0.2);color:var(--teal-l);}
+.nb-supervisor{background:rgba(124,92,191,0.2);color:var(--purple-l);}
+.note-date{font-size:10px;color:var(--muted);margin-left:auto;}
+.note-text{font-size:12px;color:var(--text);line-height:1.5;}
+.note-author{font-size:10px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:3px;}
+.btn-del-note{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;margin-left:auto;padding:0;transition:color .15s;}
+.btn-del-note:hover{color:#ff7b6b;}
+
+/* STATUS */
+.status-bar{background:var(--bg2);border-top:1px solid var(--border);padding:5px 14px;display:flex;align-items:center;gap:9px;font-size:11px;color:var(--muted);flex-shrink:0;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--teal-l);flex-shrink:0;}
+.btn-cache-sm{background:rgba(212,134,10,0.15);border:1px solid rgba(212,134,10,0.4);border-radius:5px;padding:3px 9px;color:var(--amber-l);font-size:11px;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:4px;transition:opacity .2s;}
+.btn-cache-sm:hover{opacity:.8;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:100;display:flex;align-items:center;justify-content:center;padding:14px;}
+.modal-bg.hidden{display:none;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:22px;width:390px;max-width:100%;max-height:92vh;overflow-y:auto;}
+.modal h3{font-family:'Nunito',sans-serif;font-size:16px;font-weight:900;margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.field{margin-bottom:12px;}
+.field label{font-size:10px;font-weight:700;font-family:'Nunito',sans-serif;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:4px;}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;color:var(--text);font-size:14px;font-family:'Nunito Sans',sans-serif;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--blue);}
+.field select option{background:var(--bg3);}
+.path-display{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 11px;font-size:12px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.path-display i{font-size:14px;color:var(--amber-l);}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r-sm);padding:18px 14px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:12px;}
+.drop-zone:hover{border-color:var(--blue);}
+.prog-wrap{display:none;margin-bottom:12px;}
+.prog-lbl{font-size:12px;color:var(--muted);margin-bottom:5px;}
+.prog-bg{background:var(--bg3);border-radius:4px;height:5px;overflow:hidden;}
+.prog-bar{height:100%;width:0%;background:var(--blue);transition:width .3s;border-radius:4px;}
+.modal-btns{display:flex;gap:9px;margin-top:4px;}
+.btn-cancel{flex:1;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--muted);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:color .15s;}
+.btn-cancel:hover{color:var(--text);}
+.btn-confirm{flex:2;padding:9px;background:linear-gradient(135deg,var(--blue),#1a5bc4);border:none;border-radius:var(--r-sm);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:opacity .2s;}
+.btn-confirm:hover{opacity:.9;}
+.btn-confirm:disabled{opacity:.4;cursor:not-allowed;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--teal-l);border-radius:var(--r-sm);padding:10px 16px;font-size:13px;color:var(--teal-l);font-family:'Nunito',sans-serif;font-weight:700;display:flex;align-items:center;gap:7px;z-index:200;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* OVERLAY */
+.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:none;}
+.sb-overlay.show{display:block;}
+
+/* RESPONSIVE */
+@media(max-width:680px){
+  .sidebar{position:fixed;z-index:50;height:100vh;transform:translateX(-100%);}
+  .sidebar.visible{transform:translateX(0);}
+  .btn-menu{display:flex;}
+  .doc-paper{padding:28px 18px;}
+  .tb-label{display:none;}
+  .notes-panel{position:fixed;right:0;top:0;height:100vh;z-index:50;}
+}
+</style>
+</head>
+<body>
+
+<div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">
+        <div class="sb-logo-icon"><i class="ti ti-books" aria-hidden="true"></i></div>
+        <div class="sb-logo-text">
+          <span>Barrigón Classroom</span>
+          <small>Planeamientos</small>
+        </div>
+      </div>
+      <button class="btn-upload" onclick="openUploadModal()">
+        <i class="ti ti-plus" aria-hidden="true"></i> Subir documento
+      </button>
+    </div>
+    <div class="sb-search">
+      <input type="text" placeholder="Buscar..." id="searchInput" oninput="renderTree()">
+    </div>
+    <div class="sb-tree" id="sbTree"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="toolbar">
+      <button class="btn-menu" onclick="toggleSidebar()" aria-label="Menú">
+        <i class="ti ti-menu-2" aria-hidden="true"></i>
+      </button>
+      <span class="toolbar-title" id="toolbarTitle" onclick="goHome()" title="Ir al inicio">Inicio</span>
+      <div class="tb-sep"></div>
+      <button class="tb-btn amber"  id="btnNotes"  onclick="toggleNotes()" style="display:none">
+        <i class="ti ti-message-circle" aria-hidden="true"></i><span class="tb-label">Anotaciones</span>
+      </button>
+      <button class="tb-btn teal"   id="btnPrint"  onclick="printDoc()"    style="display:none">
+        <i class="ti ti-printer"        aria-hidden="true"></i><span class="tb-label">Imprimir</span>
+      </button>
+      <button class="tb-btn purple" id="btnExport" onclick="exportNotes()" style="display:none">
+        <i class="ti ti-download"       aria-hidden="true"></i><span class="tb-label">Exportar</span>
+      </button>
+      <button class="tb-btn danger" id="btnDelete" onclick="deleteDoc()"   style="display:none">
+        <i class="ti ti-trash"          aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="viewer-wrap">
+      <div class="doc-area" id="docArea">
+        <div id="dashView" class="dashboard"></div>
+        <div id="docContent" style="display:none"></div>
+      </div>
+
+      <!-- NOTES PANEL -->
+      <div class="notes-panel collapsed" id="notesPanel">
+        <div class="np-hdr">
+          <h3><i class="ti ti-message-circle" aria-hidden="true"></i> Anotaciones</h3>
+          <button class="btn-close-np" onclick="toggleNotes()"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="np-form">
+          <label>Tipo</label>
+          <select id="noteType">
+            <option value="observation">📋 Observación general</option>
+            <option value="correction">✏️ Corrección</option>
+            <option value="highlight">⭐ Destacar</option>
+            <option value="supervisor">🏫 Nota del supervisor</option>
+          </select>
+          <label>Anotación</label>
+          <textarea id="noteText" placeholder="Escribe aquí..."></textarea>
+          <label>Autor</label>
+          <select id="noteAuthor">
+            <option value="Docente">Docente (José White)</option>
+            <option value="Director">Director</option>
+            <option value="Supervisor">Supervisor MEDUCA</option>
+          </select>
+          <button class="btn-add-note" onclick="addNote()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Agregar
+          </button>
+        </div>
+        <div class="np-list" id="notesList"></div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span id="statusTxt">Guardado localmente</span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        <button class="btn-cache-sm" onclick="clearCacheAndReload()">
+          <i class="ti ti-refresh" aria-hidden="true"></i> Limpiar caché
+        </button>
+        <span id="statusInfo">0 docs</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUBIR -->
+<div class="modal-bg hidden" id="uploadModal">
+  <div class="modal">
+    <h3>Subir planeamiento</h3>
+    <p class="modal-sub">Elige dónde guardarlo, selecciona el archivo y sube.</p>
+
+    <div class="field">
+      <label>Trimestre / Carpeta principal</label>
+      <select id="upL1" onchange="onL1Change()"></select>
+    </div>
+    <div class="field">
+      <label>Grado / Subcarpeta</label>
+      <select id="upL2" onchange="onL2Change()"></select>
+    </div>
+    <div class="path-display" id="pathDisplay">
+      <i class="ti ti-folder-open" aria-hidden="true"></i>
+      <span id="pathText">—</span>
+    </div>
+
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <i class="ti ti-upload" style="font-size:26px;color:var(--muted);display:block;margin-bottom:7px" aria-hidden="true"></i>
+      <span id="dropLabel" style="font-size:13px;color:var(--muted)">Toca aquí para seleccionar archivo<br><small style="font-size:11px">Word (.docx) o PDF</small></span>
+    </div>
+    <input type="file" id="fileInput" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="onFileSelected(this)">
+
+    <div class="field">
+      <label>Título del documento</label>
+      <input type="text" id="upTitle" placeholder="Ej: Planeamiento Semana 1–2">
+    </div>
+
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-lbl" id="progLbl">Procesando...</div>
+      <div class="prog-bg"><div class="prog-bar" id="progBar"></div></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmUpload()" disabled>Subir documento</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ═══════════ DATOS ═══════════
+   doc: { id, title, folder(L1), subfolder(L2), type, date, isNew, content }
+════════════════════════════════ */
+const SK='barrigon_docs_v2', NK='barrigon_notes_v2';
+let docs=[], notes=[], activeDocId=null, notesOpen=false;
+const openState={};
+
+/* ── persistencia ── */
+function save(){
+  try{ localStorage.setItem(SK,JSON.stringify(docs)); localStorage.setItem(NK,JSON.stringify(notes)); }
+  catch(e){ showToast('Almacenamiento lleno'); }
+}
+function load(){
+  try{
+    const d=localStorage.getItem(SK), n=localStorage.getItem(NK);
+    if(d) docs=JSON.parse(d);
+    if(n) notes=JSON.parse(n);
+    docs.forEach(d=>{ if(!d.subfolder) d.subfolder='General'; });
+  }catch(e){}
+  if(!docs.length) seedDocs();
+}
+
+function seedDocs(){
+  docs=[
+    {id:'d1',title:'Planeamiento Semana 1–2',folder:'I Trimestre',subfolder:'Grade 3',
+     type:'word',date:'2026-03-03',isNew:true,
+     content:`<h1>Planeamiento Semanal de Inglés</h1>
+<div class="doc-meta"><span>📅 Semanas 1–2 · Marzo 2026</span><span>🎒 Grade 3</span><span>👨‍🏫 José R. White</span></div>
+<div class="doc-section"><h2>I. Información general</h2>
+<table class="doc-table"><tr><th>Materia</th><th>Grado</th><th>Semanas</th><th>Período</th></tr>
+<tr><td>Inglés</td><td>3°</td><td>1–2</td><td>I Trimestre 2026</td></tr></table></div>
+<div class="doc-section"><h2>II. Objetivos</h2>
+<p>Desarrollar habilidades orales y escritas con vocabulario de rutinas diarias.</p>
+<ul><li>Usar presente simple para describir rutinas.</li><li>Practicar pronunciación de verbos de acción.</li><li>Completar diálogos con vocabulario de la semana.</li></ul></div>
+<div class="doc-section"><h2>III. Contenidos</h2>
+<table class="doc-table"><tr><th>Día</th><th>Tema</th><th>Actividad</th><th>Recursos</th></tr>
+<tr><td>Lunes</td><td>Daily routines</td><td>Flashcards + matching</td><td>Tarjetas impresas</td></tr>
+<tr><td>Martes</td><td>Present simple</td><td>Fill-in-the-blank</td><td>Hoja de trabajo</td></tr>
+<tr><td>Miércoles</td><td>Pronunciation</td><td>Repetición coral</td><td>Audio (cel)</td></tr>
+<tr><td>Jueves</td><td>Reading</td><td>Lectura guiada</td><td>Texto impreso</td></tr>
+<tr><td>Viernes</td><td>Assessment</td><td>Quiz oral</td><td>Rúbrica</td></tr></table></div>
+<div class="doc-section"><h2>IV. Evaluación</h2><p>Oral 40% · Hoja de trabajo 30% · Quiz 30%</p></div>`},
+    {id:'d2',title:'Planeamiento Semana 3–4',folder:'I Trimestre',subfolder:'Grade 3',
+     type:'word',date:'2026-03-17',isNew:false,
+     content:`<h1>Planeamiento Semanal de Inglés</h1>
+<div class="doc-meta"><span>📅 Semanas 3–4 · Marzo 2026</span><span>🎒 Grade 3</span><span>👨‍🏫 José R. White</span></div>
+<div class="doc-section"><h2>I. Objetivos</h2>
+<ul><li>Oraciones negativas con don't / doesn't.</li><li>Preguntas con Do / Does.</li><li>Objetos del salón en inglés.</li></ul></div>
+<div class="doc-section"><h2>II. Contenidos</h2>
+<table class="doc-table"><tr><th>Día</th><th>Tema</th><th>Actividad</th></tr>
+<tr><td>Lunes</td><td>Negative sentences</td><td>Transformación de oraciones</td></tr>
+<tr><td>Martes</td><td>Yes/No questions</td><td>Interview a classmate</td></tr>
+<tr><td>Miércoles</td><td>Classroom objects</td><td>Label the classroom</td></tr>
+<tr><td>Jueves</td><td>Colors + objects</td><td>Descripción oral</td></tr>
+<tr><td>Viernes</td><td>Review + quiz</td><td>Test escrito corto</td></tr></table></div>
+<div class="doc-section"><h2>III. Evaluación</h2><p>Test 50% · Entrevista 30% · Cuaderno 20%</p></div>`},
+    {id:'d3',title:'Planeamiento Semana 5–6',folder:'I Trimestre',subfolder:'Grade 4',
+     type:'pdf',date:'2026-04-01',isNew:false,
+     content:`<h1>Planeamiento Semanal de Inglés</h1>
+<div class="doc-meta"><span>📅 Semanas 5–6 · Abril 2026</span><span>🎒 Grade 4</span><span>👨‍🏫 José R. White</span></div>
+<div class="doc-section"><h2>I. Objetivos</h2><p>Introducir el pasado simple con verbos regulares.</p></div>
+<div class="doc-section"><h2>II. Contenidos</h2>
+<table class="doc-table"><tr><th>Día</th><th>Tema</th><th>Actividad</th></tr>
+<tr><td>Lunes</td><td>Past simple -ed</td><td>Song: Yesterday I…</td></tr>
+<tr><td>Martes</td><td>Spelling rules</td><td>Mapa mental</td></tr>
+<tr><td>Miércoles</td><td>My weekend</td><td>Escritura guiada</td></tr>
+<tr><td>Jueves</td><td>Peer correction</td><td>Intercambio entre pares</td></tr>
+<tr><td>Viernes</td><td>Oral presentation</td><td>My Weekend en 30 seg.</td></tr></table></div>
+<div class="doc-section"><h2>III. Evaluación</h2><p>Escritura 40% · Oral 40% · Participación 20%</p></div>`},
+    {id:'d4',title:'Planeamiento Semana 1',folder:'II Trimestre',subfolder:'Grade 3',
+     type:'word',date:'2026-05-05',isNew:true,
+     content:`<h1>Planeamiento Semanal de Inglés</h1>
+<div class="doc-meta"><span>📅 Semana 1 · Mayo 2026</span><span>🎒 Grade 3</span><span>👨‍🏫 José R. White</span></div>
+<div class="doc-section"><h2>I. Objetivos</h2><p>Repasar I Trimestre e introducir "will" para el futuro.</p></div>
+<div class="doc-section"><h2>II. Actividades</h2><ul>
+<li>Diagnóstico inicial II Trimestre</li>
+<li>Repaso de vocabulario sin internet</li>
+<li>Introducción "will" con ejemplos cotidianos</li>
+<li>Escritura de predicciones personales</li>
+<li>Presentación en pares</li></ul></div>`},
+  ];
+  save();
+}
+
+/* ── árbol ── */
+function getTree(filter){
+  const t={};
+  docs.forEach(d=>{
+    if(filter && !d.title.toLowerCase().includes(filter.toLowerCase())) return;
+    if(!t[d.folder]) t[d.folder]={};
+    if(!t[d.folder][d.subfolder]) t[d.folder][d.subfolder]=[];
+    t[d.folder][d.subfolder].push(d);
+  });
+  return t;
+}
+function getAllL1(){ return [...new Set(docs.map(d=>d.folder))]; }
+function getAllL2(l1){ return [...new Set(docs.filter(d=>d.folder===l1).map(d=>d.subfolder))]; }
+
+/* ── sidebar tree ── */
+function renderTree(){
+  const filter=document.getElementById('searchInput').value.trim();
+  const tree=getTree(filter);
+  const sb=document.getElementById('sbTree');
+  let html=`<div class="tree-hdr">Carpetas
+    <button onclick="addL1()" title="Nueva carpeta"><i class="ti ti-folder-plus"></i></button>
+  </div>`;
+
+  Object.keys(tree).forEach(l1=>{
+    const l2map=tree[l1];
+    const total=Object.values(l2map).reduce((a,v)=>a+v.length,0);
+    const l1id='l1_'+sid(l1);
+    const isOpen=openState[l1id]!==false;
+    html+=`<div class="fl1 ${isOpen?'open':''}" id="${l1id}">
+      <div class="fl1-h" onclick="toggleL1('${l1id}')">
+        <i class="ti ti-chevron-right cv" aria-hidden="true"></i>
+        <i class="ti ti-folder fi" aria-hidden="true"></i>
+        <span class="fn">${eh(l1)}</span>
+        <span class="fc">${total}</span>
+        <button class="addsub" onclick="event.stopPropagation();addL2('${eh(l1)}')" title="Nueva subcarpeta">
+          <i class="ti ti-folder-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="fl1-b">`;
+
+    Object.keys(l2map).forEach(l2=>{
+      const ddocs=l2map[l2];
+      const l2id=l1id+'_'+sid(l2);
+      const isOpen2=openState[l2id]!==false;
+      html+=`<div class="fl2 ${isOpen2?'open':''}" id="${l2id}">
+        <div class="fl2-h" onclick="toggleL2('${l2id}')">
+          <i class="ti ti-chevron-right cv2" aria-hidden="true"></i>
+          <i class="${subIcon(l2)} fi2" style="color:var(--blue-l)" aria-hidden="true"></i>
+          <span class="fn2">${eh(l2)}</span>
+          <span class="fc2">${ddocs.length}</span>
+          <button class="adddoc" onclick="event.stopPropagation();openUploadModal('${eh(l1)}','${eh(l2)}')" title="Subir aquí">
+            <i class="ti ti-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="fl2-b">`;
+
+      ddocs.forEach(d=>{
+        const ic=d.type==='pdf'?'ti-file-type-pdf':'ti-file-type-docx';
+        const col=d.type==='pdf'?'#ff7b6b':'var(--blue-l)';
+        html+=`<div class="doc-item ${d.id===activeDocId?'active':''}" onclick="openDoc('${d.id}')">
+          <i class="ti ${ic}" style="color:${col}" aria-hidden="true"></i>
+          <span class="dn">${eh(d.title)}</span>
+          ${d.isNew?'<span class="db db-new">Nuevo</span>':''}
+        </div>`;
+      });
+      html+=`</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+
+  sb.innerHTML=html;
+  document.getElementById('statusInfo').textContent=`${docs.length} docs · ${notes.length} notas`;
+}
+
+function subIcon(n){
+  n=n.toLowerCase();
+  if(n.includes('pre'))   return 'ti ti-baby-carriage';
+  if(n.includes('kinder'))return 'ti ti-abc';
+  if(/\b1\b|first/.test(n))  return 'ti ti-number-1';
+  if(/\b2\b|second/.test(n)) return 'ti ti-number-2';
+  if(/\b3\b|third/.test(n))  return 'ti ti-number-3';
+  if(/\b4\b|fourth/.test(n)) return 'ti ti-number-4';
+  if(/\b5\b|fifth/.test(n))  return 'ti ti-number-5';
+  if(/\b6\b|sixth/.test(n))  return 'ti ti-number-6';
+  return 'ti ti-folder';
+}
+
+function toggleL1(id){ openState[id]=document.getElementById(id).classList.toggle('open'); }
+function toggleL2(id){ openState[id]=document.getElementById(id).classList.toggle('open'); }
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar'), ov=document.getElementById('sbOverlay');
+  const v=sb.classList.toggle('visible'); ov.classList.toggle('show',v);
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('visible');
+  document.getElementById('sbOverlay').classList.remove('show');
+}
+
+/* ── dashboard ── */
+function renderDashboard(){
+  const tree=getTree();
+  const l1s=Object.keys(tree);
+  const h=new Date().getHours();
+  const saludo=h<12?'Buenos días':h<18?'Buenas tardes':'Buenas noches';
+  const recent=[...docs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+
+  const fH=l1s.map(l1=>{
+    const subs=Object.keys(tree[l1]);
+    const cnt=Object.values(tree[l1]).reduce((a,v)=>a+v.length,0);
+    return `<div class="df-card" onclick="focusL1('${eh(l1)}')">
+      <i class="ti ti-folder" aria-hidden="true"></i>
+      <div class="df-name">${eh(l1)}</div>
+      <div class="df-meta">${subs.length} subcarpeta${subs.length!==1?'s':''} · ${cnt} doc${cnt!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+
+  const rH=recent.map(d=>{
+    const ic=d.type==='pdf'?'ti-file-type-pdf':'ti-file-type-docx';
+    const col=d.type==='pdf'?'#ff7b6b':'var(--blue-l)';
+    return `<div class="dr-item" onclick="openDoc('${d.id}')">
+      <i class="ti ${ic}" style="color:${col};font-size:15px" aria-hidden="true"></i>
+      <span class="dr-title">${eh(d.title)}</span>
+      <span class="dr-meta">${eh(d.subfolder)}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('dashView').innerHTML=`
+    <div class="dash-greeting">
+      <h2>${saludo}, José 👋</h2>
+      <p>CEBG Barrigón · Planeamientos de inglés</p>
+    </div>
+    <div class="dash-stats">
+      <div class="stat-card sc-blue"><div class="stat-num">${docs.length}</div><div class="stat-lbl">Documentos</div></div>
+      <div class="stat-card sc-amber"><div class="stat-num">${l1s.length}</div><div class="stat-lbl">Trimestres</div></div>
+      <div class="stat-card sc-teal"><div class="stat-num">${notes.length}</div><div class="stat-lbl">Anotaciones</div></div>
+    </div>
+    <div class="dash-sec">Trimestres</div>
+    <div class="dash-folders">${fH||'<p style="font-size:13px;color:var(--muted)">Sin carpetas.</p>'}</div>
+    <div class="dash-sec">Recientes</div>
+    <div class="dash-recent">${rH||'<p style="font-size:13px;color:var(--muted)">Sin documentos.</p>'}</div>
+    <button class="dash-btn-up" onclick="openUploadModal()">
+      <i class="ti ti-plus" aria-hidden="true"></i> Subir nuevo planeamiento
+    </button>
+    <button class="dash-btn-cache" onclick="clearCacheAndReload()">
+      <i class="ti ti-refresh" aria-hidden="true"></i> Limpiar caché y actualizar app
+    </button>`;
+}
+
+function focusL1(l1){
+  const sb=document.getElementById('sidebar'), ov=document.getElementById('sbOverlay');
+  sb.classList.add('visible'); ov.classList.add('show');
+  const id='l1_'+sid(l1);
+  setTimeout(()=>{
+    const el=document.getElementById(id);
+    if(el){ el.classList.add('open'); openState[id]=true; el.scrollIntoView({behavior:'smooth'}); }
+  },300);
+}
+
+/* ── navegación ── */
+function goHome(){
+  activeDocId=null;
+  document.getElementById('docContent').style.display='none';
+  document.getElementById('dashView').style.display='';
+  document.getElementById('toolbarTitle').textContent='Inicio';
+  ['btnNotes','btnPrint','btnExport','btnDelete'].forEach(b=>document.getElementById(b).style.display='none');
+  if(notesOpen) toggleNotes();
+  renderTree(); renderDashboard();
+}
+
+function openDoc(id){
+  const doc=docs.find(d=>d.id===id); if(!doc) return;
+  activeDocId=id; doc.isNew=false; save();
+  document.getElementById('dashView').style.display='none';
+  document.getElementById('docContent').style.display='block';
+  document.getElementById('docContent').innerHTML=`<div class="doc-paper">${doc.content}</div>`;
+  document.getElementById('toolbarTitle').textContent=doc.title;
+  ['btnNotes','btnPrint','btnExport','btnDelete'].forEach(b=>document.getElementById(b).style.display='flex');
+  renderNotes(); renderTree(); closeSidebar();
+}
+
+function deleteDoc(){
+  if(!activeDocId) return;
+  const doc=docs.find(d=>d.id===activeDocId);
+  if(!confirm(`¿Eliminar "${doc.title}"?`)) return;
+  docs=docs.filter(d=>d.id!==activeDocId);
+  notes=notes.filter(n=>n.docId!==activeDocId);
+  save(); goHome(); showToast('Documento eliminado');
+}
+
+function printDoc(){
+  if(!activeDocId) return;
+  const doc=docs.find(d=>d.id===activeDocId);
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${doc.title}</title>
+<style>body{font-family:Arial,sans-serif;padding:36px;color:#1a1a2e;max-width:800px;margin:0 auto;}
+h1{font-size:18px;margin-bottom:5px;}.doc-meta{font-size:11px;color:#6b7280;margin-bottom:16px;border-bottom:1px solid #e5e7eb;padding-bottom:9px;}
+.doc-section{margin-bottom:14px;}h2{font-size:11px;text-transform:uppercase;border-bottom:2px solid #e5e7eb;padding-bottom:2px;margin:11px 0 6px;}
+h3{font-size:11px;margin:7px 0 3px;}p,li{font-size:12px;line-height:1.6;}ul{padding-left:15px;}
+table{width:100%;border-collapse:collapse;margin:6px 0;}th,td{border:1px solid #d1d5db;padding:5px 8px;font-size:11px;text-align:left;}
+th{background:#f9fafb;}tr:nth-child(even) td{background:#fafafa;}@media print{body{padding:16px;}}</style>
+</head><body>${doc.content}</body></html>`);
+  w.document.close(); w.print();
+}
+
+/* ── anotaciones ── */
+function toggleNotes(){
+  notesOpen=!notesOpen;
+  document.getElementById('notesPanel').classList.toggle('collapsed',!notesOpen);
+  document.getElementById('btnNotes').classList.toggle('active',notesOpen);
+  if(notesOpen) renderNotes();
+}
+function labelType(t){ return{observation:'Observación',correction:'Corrección',highlight:'Destacar',supervisor:'Supervisor'}[t]||t; }
+function renderNotes(){
+  const list=document.getElementById('notesList');
+  const dn=notes.filter(n=>n.docId===activeDocId);
+  if(!dn.length){ list.innerHTML='<p style="font-size:12px;color:var(--muted);text-align:center;padding:16px 0">Sin anotaciones</p>'; return; }
+  list.innerHTML=dn.map(n=>`
+    <div class="note-card ${n.type}">
+      <div class="note-top">
+        <span class="nbadge nb-${n.type}">${labelType(n.type)}</span>
+        <span class="note-date">${n.date}</span>
+        <button class="btn-del-note" onclick="deleteNote('${n.id}')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="note-text">${eh(n.text)}</div>
+      <div class="note-author"><i class="ti ti-user" style="font-size:11px"></i> ${eh(n.author)}</div>
+    </div>`).join('');
+}
+function addNote(){
+  const text=document.getElementById('noteText').value.trim();
+  if(!text||!activeDocId){ showToast('Escribe una anotación primero'); return; }
+  notes.push({id:'n'+Date.now(),docId:activeDocId,
+    type:document.getElementById('noteType').value, text,
+    author:document.getElementById('noteAuthor').value,
+    date:new Date().toLocaleDateString('es-PA',{day:'2-digit',month:'short',year:'numeric'})});
+  save(); document.getElementById('noteText').value='';
+  renderNotes(); document.getElementById('statusInfo').textContent=`${docs.length} docs · ${notes.length} notas`;
+  showToast('Anotación guardada');
+}
+function deleteNote(id){
+  notes=notes.filter(n=>n.id!==id); save(); renderNotes();
+  document.getElementById('statusInfo').textContent=`${docs.length} docs · ${notes.length} notas`;
+}
+function exportNotes(){
+  if(!activeDocId) return;
+  const doc=docs.find(d=>d.id===activeDocId);
+  const dn=notes.filter(n=>n.docId===activeDocId);
+  if(!dn.length){ showToast('Sin anotaciones'); return; }
+  let txt=`ANOTACIONES — ${doc.title}\nExportado: ${new Date().toLocaleString('es-PA')}\n${'='.repeat(50)}\n\n`;
+  dn.forEach(n=>{ txt+=`[${labelType(n.type).toUpperCase()}] ${n.date} — ${n.author}\n${n.text}\n\n`; });
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);
+  a.download=`Notas — ${doc.title}.txt`; a.click();
+  showToast('Notas exportadas');
+}
+
+/* ── crear carpetas ── */
+function addL1(){
+  const name=prompt('Nombre del trimestre / carpeta principal:');
+  if(!name||!name.trim()) return;
+  if(!docs.find(d=>d.folder===name.trim())) { docs.push(phantom(name.trim(),'General')); save(); }
+  renderTree(); renderDashboard(); showToast(`Carpeta "${name.trim()}" creada`);
+}
+function addL2(l1){
+  const name=prompt(`Nueva subcarpeta dentro de "${l1}":`);
+  if(!name||!name.trim()) return;
+  if(!docs.find(d=>d.folder===l1&&d.subfolder===name.trim())) { docs.push(phantom(l1,name.trim())); save(); }
+  renderTree(); renderDashboard(); showToast(`Subcarpeta "${name.trim()}" creada`);
+}
+function phantom(l1,l2){
+  return{id:'ph'+Date.now(),title:'(vacío)',folder:l1,subfolder:l2,type:'word',
+    date:new Date().toISOString().split('T')[0],isNew:false,
+    content:`<h1>${eh(l1)} › ${eh(l2)}</h1>
+<div class="doc-section"><p>Subcarpeta vacía. Toca el <strong>+</strong> junto al nombre para subir el primer documento.</p></div>`};
+}
+
+/* ── modal upload ── */
+let pendingContent=null, pendingType=null;
+
+const DEFAULT_L1=['I Trimestre','II Trimestre','III Trimestre','Recursos generales'];
+const DEFAULT_L2=['PreK','Kinder','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','General'];
+
+function buildOpts(arr,selected,extra){
+  return arr.map(f=>`<option value="${eh(f)}" ${f===selected?'selected':''}>${eh(f)}</option>`).join('')
+    +(extra?`<option value="__new__">${extra}</option>`:'');
+}
+
+function openUploadModal(preL1,preL2){
+  pendingContent=null; pendingType=null;
+  document.getElementById('upTitle').value='';
+  document.getElementById('dropLabel').innerHTML='Toca aquí para seleccionar archivo<br><small style="font-size:11px">Word (.docx) o PDF</small>';
+  document.getElementById('dropZone').style.borderColor='var(--border)';
+  document.getElementById('progWrap').style.display='none';
+  document.getElementById('btnConfirm').disabled=true;
+  document.getElementById('fileInput').value='';
+
+  const all1=[...new Set([...DEFAULT_L1,...getAllL1()])];
+  const selL1=document.getElementById('upL1');
+  selL1.innerHTML=buildOpts(all1,preL1||all1[0],'+ Nueva carpeta principal...');
+  const currL1=preL1||selL1.value;
+  const all2=[...new Set([...DEFAULT_L2,...getAllL2(currL1)])];
+  document.getElementById('upL2').innerHTML=buildOpts(all2,preL2||'Grade 1','+ Nueva subcarpeta...');
+
+  selL1.onchange=onL1Change;
+  document.getElementById('upL2').onchange=onL2Change;
+  updatePath();
+  document.getElementById('uploadModal').classList.remove('hidden');
+}
+
+function onL1Change(){
+  const sel=document.getElementById('upL1');
+  if(sel.value==='__new__'){
+    const n=prompt('Nombre de la nueva carpeta principal:');
+    if(n&&n.trim()){
+      const o=new Option(n.trim(),n.trim(),true,true);
+      sel.insertBefore(o,sel.lastElementChild); sel.value=n.trim();
+    } else sel.value=DEFAULT_L1[0];
+  }
+  const l1=sel.value;
+  const all2=[...new Set([...DEFAULT_L2,...getAllL2(l1)])];
+  document.getElementById('upL2').innerHTML=buildOpts(all2,'Grade 1','+ Nueva subcarpeta...');
+  updatePath();
+}
+function onL2Change(){
+  const l1=document.getElementById('upL1').value;
+  const sel=document.getElementById('upL2');
+  if(sel.value==='__new__'){
+    const n=prompt(`Nueva subcarpeta dentro de "${l1}":`);
+    if(n&&n.trim()){
+      const o=new Option(n.trim(),n.trim(),true,true);
+      sel.insertBefore(o,sel.lastElementChild); sel.value=n.trim();
+    } else sel.value='Grade 1';
+  }
+  updatePath();
+}
+function updatePath(){
+  document.getElementById('pathText').textContent=
+    `${document.getElementById('upL1').value}  ›  ${document.getElementById('upL2').value}`;
+}
+function closeModal(){ document.getElementById('uploadModal').classList.add('hidden'); }
+
+function setProgress(pct,lbl){
+  document.getElementById('progWrap').style.display='block';
+  document.getElementById('progBar').style.width=pct+'%';
+  document.getElementById('progLbl').textContent=lbl;
+}
+
+async function onFileSelected(input){
+  const file=input.files[0]; if(!file) return;
+  const ti=document.getElementById('upTitle');
+  if(!ti.value.trim()) ti.value=file.name.replace(/\.(docx|pdf)$/i,'').replace(/[-_]/g,' ');
+  document.getElementById('btnConfirm').disabled=true;
+  document.getElementById('dropLabel').innerHTML=`<strong style="color:var(--text)">${eh(file.name)}</strong><br><small style="color:var(--muted);font-size:11px">Procesando...</small>`;
+  document.getElementById('dropZone').style.borderColor='var(--blue)';
+  setProgress(10,'Leyendo archivo...');
+  try{
+    const n=file.name.toLowerCase();
+    if(n.endsWith('.docx')||file.type.includes('wordprocessingml')) await processDocx(file);
+    else if(n.endsWith('.pdf')||file.type==='application/pdf') await processPdf(file);
+    else throw new Error('Formato no soportado. Usa .docx o .pdf');
+  }catch(err){
+    document.getElementById('progWrap').style.display='none';
+    document.getElementById('dropLabel').innerHTML=`<span style="color:#ff7b6b">⚠ ${eh(err.message)}</span>`;
+    document.getElementById('dropZone').style.borderColor='var(--coral)';
+  }
+}
+
+async function processDocx(file){
+  if(typeof mammoth==='undefined') throw new Error('mammoth.js no disponible. Necesitas internet la primera vez.');
+  setProgress(30,'Convirtiendo Word...');
+  const ab=await file.arrayBuffer();
+  setProgress(60,'Extrayendo contenido...');
+  const r=await mammoth.convertToHtml({arrayBuffer:ab});
+  setProgress(90,'Finalizando...');
+  pendingContent=wrapContent(r.value); pendingType='word';
+  onFileReady(file.name);
+}
+
+async function processPdf(file){
+  if(typeof pdfjsLib==='undefined') throw new Error('PDF.js no disponible. Necesitas internet la primera vez.');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  setProgress(20,'Cargando PDF...');
+  const ab=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:ab}).promise;
+  let html='';
+  for(let i=1;i<=pdf.numPages;i++){
+    setProgress(20+Math.round((i/pdf.numPages)*70),`Página ${i} de ${pdf.numPages}...`);
+    const page=await pdf.getPage(i);
+    const ct=await page.getTextContent();
+    html+=`<div class="doc-section"><p>${ct.items.map(it=>eh(it.str)).join(' ')}</p></div>`;
+    if(i<pdf.numPages) html+='<hr style="border:none;border-top:1px dashed #d1d5db;margin:12px 0;">';
+  }
+  pendingContent=html; pendingType='pdf'; onFileReady(file.name);
+}
+
+function wrapContent(html){
+  return html
+    .replace(/<table/g,'<table class="doc-table"')
+    .replace(/<p>/g,'<p style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:7px;">')
+    .replace(/<ul>/g,'<ul style="padding-left:16px;margin-bottom:7px;">')
+    .replace(/<li>/g,'<li style="font-size:13px;color:#374151;line-height:1.7;">');
+}
+function onFileReady(name){
+  setProgress(100,'¡Listo!');
+  document.getElementById('dropLabel').innerHTML=
+    `<i class="ti ti-circle-check" style="color:var(--teal-l);font-size:20px;display:block;margin-bottom:4px"></i>
+     <strong style="color:var(--text)">${eh(name)}</strong><br>
+     <small style="color:var(--teal-l);font-size:11px">Procesado correctamente</small>`;
+  document.getElementById('dropZone').style.borderColor='var(--teal-l)';
+  document.getElementById('btnConfirm').disabled=false;
+}
+
+function confirmUpload(){
+  const title=document.getElementById('upTitle').value.trim();
+  if(!title){ alert('Escribe un título'); return; }
+  if(!pendingContent){ alert('Selecciona un archivo primero'); return; }
+  const l1=document.getElementById('upL1').value;
+  const l2=document.getElementById('upL2').value;
+  const fecha=new Date().toLocaleDateString('es-PA',{day:'2-digit',month:'long',year:'numeric'});
+  const header=`<h1>${eh(title)}</h1>
+<div class="doc-meta"><span>📅 ${fecha}</span><span>📁 ${eh(l1)} › ${eh(l2)}</span><span>👨‍🏫 José R. White</span></div>`;
+  const newDoc={id:'d'+Date.now(),title,folder:l1,subfolder:l2,type:pendingType,
+    date:new Date().toISOString().split('T')[0],isNew:true,content:header+pendingContent};
+  try{ docs.push(newDoc); save(); }
+  catch(e){
+    docs.pop();
+    newDoc.content=header+'<div class="doc-section"><p>Almacenamiento lleno: contenido no guardado.</p></div>';
+    docs.push(newDoc); save(); showToast('Almacenamiento lleno: solo se guardó el título');
+  }
+  pendingContent=null;
+  document.getElementById('upTitle').value='';
+  document.getElementById('fileInput').value='';
+  closeModal(); renderTree(); renderDashboard(); openDoc(newDoc.id);
+  showToast('Planeamiento subido');
+}
+
+/* ── utilidades ── */
+function sid(s){ return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+function eh(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.innerHTML=`<i class="ti ti-check" aria-hidden="true"></i> ${msg}`;
+  t.classList.add('show'); clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ── caché ── */
+async function clearCacheAndReload(){
+  if(!confirm('¿Limpiar caché y recargar?\n(Documentos y notas NO se borran)')) return;
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const r of regs) await r.unregister();
+    }
+    const keys=await caches.keys();
+    for(const k of keys) await caches.delete(k);
+  }catch(e){}
+  location.reload(true);
+}
+
+/* ── service worker ── */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js')
+      .then(r=>console.log('SW:',r.scope))
+      .catch(e=>console.warn('SW err:',e));
+  });
+}
+
+/* ── online / offline ── */
+function updateStatus(){
+  document.getElementById('statusTxt').textContent=
+    navigator.onLine?'Guardado localmente':'Sin conexión · guardado localmente';
+  document.querySelector('.status-dot').style.background=
+    navigator.onLine?'var(--teal-l)':'var(--amber-l)';
+}
+window.addEventListener('online',updateStatus);
+window.addEventListener('offline',updateStatus);
+updateStatus();
+
+/* ── init ── */
+load(); renderTree(); renderDashboard();
+</script>
+</body>
+</html>

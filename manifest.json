@@ -1,0 +1,27 @@
+{
+  "name": "Planeamientos — Barrigón Classroom",
+  "short_name": "Planeamientos",
+  "description": "Visualizador de planeamientos de inglés · CEBG Barrigón",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1923",
+  "theme_color": "#0f1923",
+  "orientation": "any",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": []
+}
