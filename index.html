@@ -330,6 +330,13 @@ body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--text)
       <div class="status-dot"></div>
       <span id="statusTxt">Guardado localmente</span>
       <span style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+        <button class="btn-cache-sm" onclick="handleBackup()" title="Descargar respaldo JSON">
+          <i class="ti ti-device-floppy" aria-hidden="true"></i> Respaldo
+        </button>
+        <button class="btn-cache-sm" onclick="document.getElementById('restoreInput').click()" title="Restaurar desde respaldo JSON">
+          <i class="ti ti-upload" aria-hidden="true"></i> Restaurar
+        </button>
+        <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreBackup(event)">
         <button class="btn-cache-sm" onclick="clearCacheAndReload()">
           <i class="ti ti-refresh" aria-hidden="true"></i> Limpiar caché
         </button>
@@ -722,6 +729,42 @@ function exportNotes(){
   a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(txt);
   a.download=`Notas — ${doc.title}.txt`; a.click();
   showToast('Notas exportadas');
+}
+
+/* ── respaldo / restauración completa (docs + notas) ── */
+function handleBackup(){
+  const payload={docs, notes, _version:'1.0', _date:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Respaldo_PlannerViewer_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Respaldo descargado');
+}
+function restoreBackup(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(!Array.isArray(parsed.docs)) throw new Error('Formato inválido');
+      if(!confirm('¿Restaurar respaldo? Esto reemplazará todos los documentos y anotaciones actuales.')) return;
+      docs=parsed.docs;
+      notes=Array.isArray(parsed.notes)?parsed.notes:[];
+      docs.forEach(d=>{ if(!d.subfolder) d.subfolder='General'; });
+      save();
+      activeDocId=null; goHome();
+      renderTree();
+      document.getElementById('statusInfo').textContent=`${docs.length} docs · ${notes.length} notas`;
+      showToast('Respaldo restaurado');
+    }catch(err){
+      alert('Archivo de respaldo inválido.');
+    }
+    e.target.value=null;
+  };
+  reader.readAsText(file);
 }
 
 /* ── crear carpetas ── */
